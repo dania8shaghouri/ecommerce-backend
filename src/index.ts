@@ -11,7 +11,6 @@ import productRoute from "./routes/productRoutes.js";
 import cartRoute from "./routes/cartRouter.js";
 import adminRoute from "./routes/adminRoutes.js";
 
-
 dotenv.config();
 
 const app = express();
@@ -19,12 +18,23 @@ const port = process.env.PORT || 3001;
 
 app.use("/images", express.static(path.join(process.cwd(), "src/images")));
 
+// app.use(
+//   cors({
+//     origin: "http://localhost:5173",
+//     credentials: true,
+//   }),
+// );
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://ecommerce-frontend-lyart-one.vercel.app",
+    ],
     credentials: true,
   }),
 );
+
 app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI as string;

@@ -1,31 +1,20 @@
 import express from "express";
-import { getAllProducts } from "../services/productService.js";
-import productModel from "../models/productModel.js";
+
+import {
+  getProducts,
+  getCategories,
+  getProduct,
+  getBrands,
+} from "../controllers/productController.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  try {
-    const products = await getAllProducts();
-    res.status(200).send(products);
-  } catch {
-    res.status(500).send("SomeThing went wrong");
-  }
-});
+router.get("/", getProducts);
 
-//  GET SINGLE PRODUCT
-router.get("/:id", async (req, res) => {
-  try {
-    const product = await productModel.findById(req.params.id);
+router.get("/categories", getCategories);
 
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
+router.get("/brands", getBrands);
 
-    res.json(product);
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
+router.get("/:id", getProduct);
 
 export default router;

@@ -10,12 +10,17 @@ interface RegisterParams {
   password: string;
 }
 
+// const generateJWT = (data: any) => {
+//   return jwt.sign(data, process.env.JWT_SECRET || "", {
+//     expiresIn: "1h",
+//   });
+// };
+
 const generateJWT = (data: any) => {
-  return jwt.sign(data, process.env.JWT_SECRET || "", {
+  return jwt.sign(data, process.env.JWT_SECRET as string, {
     expiresIn: "1h",
   });
 };
-
 // ---------------- REGISTER ----------------
 export const register = async ({
   firstName,
@@ -72,9 +77,7 @@ export const login = async ({ email, password }: LoginParams) => {
 
   return {
     token: generateJWT({
-      email,
-      firstName: findUser.firstName,
-      lastName: findUser.lastName,
+      userId: findUser._id,
       role: findUser.role,
     }),
     role: findUser.role,

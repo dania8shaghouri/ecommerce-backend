@@ -20,7 +20,7 @@ const validateJWT = (req: ExtendRequest, res: Response, next: NextFunction) => {
     res.status(401).send("Bearer token not found");
     return;
   }
-  jwt.verify(token, process.env.JWT_SECRET || "", async (err, payload) => {
+  jwt.verify(token, process.env.JWT_SECRET as string, async (err, payload) => {
     if (err) {
       res.status(401).send("invalid token");
       return;
@@ -30,12 +30,11 @@ const validateJWT = (req: ExtendRequest, res: Response, next: NextFunction) => {
       return;
     }
     const userPayload = payload as {
-      email: string;
-      firstName: string;
-      lastName: string;
+      userId: string;
+      role: "customer" | "admin";
     };
     // fetch user from database based on the payload
-    const user = await userModel.findOne({ email: userPayload.email });
+    const user = await userModel.findById(userPayload.userId);
     if (!user) {
       return res.status(401).send("User not found");
     }

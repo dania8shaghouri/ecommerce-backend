@@ -15,6 +15,7 @@ export interface ProductFilters {
   sort?: ProductSort;
   page?: number;
   limit?: number;
+  search?: string;
 }
 
 export const getAllProducts = async (filters?: ProductFilters) => {
@@ -35,6 +36,28 @@ export const getAllProducts = async (filters?: ProductFilters) => {
     query.brand = {
       $in: filters.brand,
     };
+  }
+  if (filters?.search) {
+    query.$or = [
+      {
+        title: {
+          $regex: filters.search,
+          $options: "i",
+        },
+      },
+      {
+        brand: {
+          $regex: filters.search,
+          $options: "i",
+        },
+      },
+      {
+        category: {
+          $regex: filters.search,
+          $options: "i",
+        },
+      },
+    ];
   }
   if (filters?.inStock) {
     query.stock = {

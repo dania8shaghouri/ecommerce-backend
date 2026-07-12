@@ -45,6 +45,11 @@ export const getProducts = async (req: Request, res: Response) => {
     const page =
       typeof req.query.page === "string" ? Number(req.query.page) : 1;
 
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
+
     const limit =
       typeof req.query.limit === "string" ? Number(req.query.limit) : 4;
 
@@ -52,6 +57,9 @@ export const getProducts = async (req: Request, res: Response) => {
       category,
       brand,
     };
+    if (search) {
+      filters.search = search;
+    }
 
     if (minPrice !== undefined) {
       filters.minPrice = minPrice;

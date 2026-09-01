@@ -21,6 +21,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.3",
     "react-hook-form": "^7.81.0",
+    "stripe": "^22.6.0",
     "typescript": "^5.9.3",
     "zod": "^4.4.3"
   },

@@ -9,11 +9,18 @@ import {
   getProductById,
   getProductCategories,
   getProductBrands,
+  getAdminProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
 } from "../services/productService.js";
 
 import type {
   ProductFilters,
   ProductSort,
+  AdminProductFilters,
+  StockStatus,
+  AdminProductSort,
 } from "../services/productService.js";
 
 export const getProducts = async (req: Request, res: Response) => {
@@ -145,5 +152,98 @@ export const getBrands = async (req: Request, res: Response) => {
     res.status(500).json({
       message: "Failed to fetch brands",
     });
+  }
+};
+
+// --------------------------
+
+export const getAdminProductsHandler = async (req: Request, res: Response) => {
+  try {
+    const search =
+      typeof req.query.search === "string" ? req.query.search.trim() : undefined;
+
+    const category =
+      typeof req.query.category === "string" ? req.query.category : undefined;
+
+      // TypeScript'e bu değerin StockStatus türünde olduğunu söylüyoruz
+    const stockStatus =
+      typeof req.query.stockStatus === "string"
+        ? (req.query.stockStatus as StockStatus)
+        : undefined;
+
+    const sort =
+      typeof req.query.sort === "string"
+        ? (req.query.sort as AdminProductSort)
+        : undefined;
+// 2 ile "2" ayni degil buyuzden URL'den gelen page değeri  string ise onu sayıya çevir
+// page yoksa veya string değilse varsayılan olarak 1 kullan
+    const page = typeof req.query.page === "string" ? Number(req.query.page) : 1;
+    const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 10;
+
+    // page ve limit her zaman varsayılan değere sahip olduğu için baştan ekleniyor. Diğer filtreler yalnızca kullanıcı tarafından gönderilmişse ekleniyor
+    const filters: AdminProductFilters = { page, limit };
+    if (search) filters.search = search;
+    if (category) filters.category = category;
+    if (stockStatus) filters.stockStatus = stockStatus;
+    if (sort) filters.sort = sort;
+
+    // controller şöyle diyor: ben gerekli bilgileri topladım. 
+    // Şimdi asıl ürün bulma işini service yapsın
+    // await önemli cunku getAdminProducts() mogodb ye gidiyor
+    const result = await getAdminProducts(filters);
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+};
+
+export const createProductHandler = async (req: Request, res: Response) => {
+  try {
+    const product = await createProduct(req.body);
+    res.status(201).json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to create product" });
+  }
+};
+
+export const updateProductHandler = async (
+  // Bu request'in params kısmı ProductParams yapısında
+  req: Request<ProductParams>,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params;
+    const product = await updateProduct(id, req.body);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to update product" });
+  }
+};
+
+export const deleteProductHandler = async (
+  req: Request<ProductParams>,
+  res: Response,
+) => {
+  try {
+    const { id } = req.params;
+    const product = await deleteProduct(id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    res.status(200).json({ message: "Product deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to delete product" });
   }
 };

@@ -3,23 +3,29 @@ import validateJWT from "../middlewares/validateJWT.js";
 import requireAdmin from "../middlewares/requireAdmin.js";
 import upload from "../middlewares/uploadMiddleware.js";
 import {
-  getAdminOrderByIdHandler,
-  getAdminOrdersHandler,
-  updateOrderStatusHandler,
-} from "../controllers/orderController.js";
-import {
   getAdminProductsHandler,
   createProductHandler,
   updateProductHandler,
   deleteProductHandler,
 } from "../controllers/productController.js";
-
+import {
+  getAdminOrdersHandler,
+  getAdminOrderByIdHandler,
+  updateOrderStatusHandler,
+} from "../controllers/orderController.js";
+import {
+  getAdminCustomersHandler,
+  getAdminCustomerByIdHandler,
+} from "../controllers/customerController.js";
 const router = express.Router();
 
+// Express fonksiyonları sırayla çalıştırır : İlk middleware
+// 1.validateJWT: şunu kontrol eder:bu kullanıcı gerçekten giriş yapmış mı?
+// 2.requireAdmin:burada artık şu soruyu soruyoruz:tamam kullanıcı giriş yapmış. Ama admin mi?
 router.get("/dashboard", validateJWT, requireAdmin, (req, res) => {
   res.json({ message: "Admin dashboard data" });
 });
-// product
+
 router.get("/products", validateJWT, requireAdmin, getAdminProductsHandler);
 router.post("/products", validateJWT, requireAdmin, createProductHandler);
 router.put("/products/:id", validateJWT, requireAdmin, updateProductHandler);
@@ -42,7 +48,6 @@ router.post(
   },
 );
 
-
 // order
 router.get("/orders", validateJWT, requireAdmin, getAdminOrdersHandler);
 router.get("/orders/:id", validateJWT, requireAdmin, getAdminOrderByIdHandler);
@@ -53,4 +58,12 @@ router.patch(
   updateOrderStatusHandler,
 );
 
+// customers
+router.get("/customers", validateJWT, requireAdmin, getAdminCustomersHandler);
+router.get(
+  "/customers/:id",
+  validateJWT,
+  requireAdmin,
+  getAdminCustomerByIdHandler,
+);
 export default router;

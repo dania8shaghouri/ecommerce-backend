@@ -34,13 +34,16 @@ export const getAdminOrdersHandler = async (req: Request, res: Response) => {
       typeof req.query.page === "string" ? Number(req.query.page) : 1;
     const limit =
       typeof req.query.limit === "string" ? Number(req.query.limit) : 10;
-
+    const userId =
+      typeof req.query.userId === "string" ? req.query.userId : undefined;
     const filters: AdminOrderFilters = { page, limit };
+
     if (search) filters.search = search;
     if (status) filters.status = status;
     if (startDate) filters.startDate = startDate;
     if (endDate) filters.endDate = endDate;
     if (sort) filters.sort = sort;
+    if (userId) filters.userId = userId;
 
     const result = await getAdminOrders(filters);
     res.status(200).json(result);

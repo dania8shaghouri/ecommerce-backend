@@ -566,7 +566,7 @@ export interface AdminProductFilters {
   limit?: number;
 }
 
-const LOW_STOCK_THRESHOLD = 10;
+export const LOW_STOCK_THRESHOLD = 10;
 
 // ? filters gönderilebilir ama zorunlu değil
 export const getAdminProducts = async (filters?: AdminProductFilters) => {

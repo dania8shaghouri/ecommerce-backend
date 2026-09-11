@@ -18,6 +18,7 @@ import {
   getAdminCustomerByIdHandler,
 } from "../controllers/customerController.js";
 import { getDashboardOverviewHandler } from "../controllers/dashboardController.js";
+import { getAdminNotificationsHandler } from "../controllers/notificationController.js";
 const router = express.Router();
 
 // Express fonksiyonları sırayla çalıştırır : İlk middleware
@@ -28,6 +29,12 @@ router.get(
   validateJWT,
   requireAdmin,
   getDashboardOverviewHandler,
+);
+router.get(
+  "/notifications",
+  validateJWT,
+  requireAdmin,
+  getAdminNotificationsHandler,
 );
 
 router.get("/products", validateJWT, requireAdmin, getAdminProductsHandler);

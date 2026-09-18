@@ -12,6 +12,7 @@ import productRoute from "./routes/productRoutes.js";
 import cartRoute from "./routes/cartRouter.js";
 import adminRoute from "./routes/adminRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
+import paymentRoute from "./routes/paymentRoutes.js";
 
 dotenv.config();
 
@@ -55,7 +56,7 @@ app.use(
     credentials: true,
   }),
 );
-
+app.use("/payment", paymentRoute);
 app.use(express.json());
 
 const MONGODB_URI = process.env.MONGODB_URI as string;

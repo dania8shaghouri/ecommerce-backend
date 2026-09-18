@@ -53,9 +53,9 @@ router.post(
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const filenames = files.map((file) => file.filename);
+    const urls = files.map((file) => file.path);   
 
-    res.status(200).json({ filenames });
+    res.status(200).json({ filenames: urls });
   },
 );
 

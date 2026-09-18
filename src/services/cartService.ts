@@ -1,7 +1,7 @@
 import { cartModel, type ICart, type ICartItem } from "../models/cartModel.js";
 import { orderModel, type IOrderItem } from "../models/orderModel.js";
 import productModel from "../models/productModel.js";
-
+import { createStripeCheckoutSession } from "./paymentService.js";
 interface CreateCartForUser {
   userId: string;
 }
@@ -274,10 +274,20 @@ export const checkout = async ({ userId, shipping }: Checkout) => {
     userId,
   });
 
+  // Stripe checkout session oluştur
+  const session = await createStripeCheckoutSession(order);
+
+  //session id'yi order'a kaydet
+  order.stripeSessionId = session.id;
+  await order.save();
+
   cart.items = [];
   cart.totalAmount = 0;
   cart.status = "completed";
   await cart.save();
 
-  return { data: order, statusCode: 200 };
+  return {
+    data: { checkoutUrl: session.url, orderId: order._id },
+    statusCode: 200,
+  };
 };

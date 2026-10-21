@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+const GEMINI_MODEL = "gemini-3.8-flash";
+
 // Başlangıçta Gemini client'ı oluşturulmuyor
 let client: GoogleGenAI | null = null;
 
@@ -43,7 +45,7 @@ Specifications: ${specLines || "None provided"}`;
 
   // Gemini'ye istek gonderme
   const response = await getGeminiClient().models.generateContent({
-    model: process.env.GEMINI_MODEL || "gemini-2.0-flash",
+    model: GEMINI_MODEL || "gemini-2.0-flash",
     contents: prompt,
   });
 

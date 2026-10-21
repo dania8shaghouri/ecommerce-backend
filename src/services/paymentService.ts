@@ -40,4 +40,32 @@ export const createStripeCheckoutSession = async (order: IOrder) => {
   return session;
 };
 
+//
+export const getPaymentMethodDetails = async (stripeSessionId: string) => {
+  const session = await getStripeClient().checkout.sessions.retrieve(
+    stripeSessionId,
+    {
+      // expand ile bu ID'nin arkasındaki gerçek objeyi de getir
+      expand: ["payment_intent.payment_method"],
+    },
+  );
+
+  // expand kullandığımız için biz tam objeyi bekliyoruz ama TypeScript bunu garanti edemiyor buyuzsen
+  // Her adımda typeof === "string" kontrolü yapiyoruz
+  const paymentIntent = session.payment_intent;
+  if (!paymentIntent || typeof paymentIntent === "string") return null;
+
+  const paymentMethod = paymentIntent.payment_method;
+  if (!paymentMethod || typeof paymentMethod === "string") return null;
+
+  if (paymentMethod.type !== "card" || !paymentMethod.card) return null;
+
+  // last4 kartin sadece son 4 hanesi
+  return {
+    brand: paymentMethod.card.brand,
+    last4: paymentMethod.card.last4,
+    expMonth: paymentMethod.card.exp_month,
+    expYear: paymentMethod.card.exp_year,
+  };
+};
 export const stripeClient = { get: getStripeClient };

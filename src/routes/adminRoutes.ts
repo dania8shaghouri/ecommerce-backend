@@ -12,6 +12,7 @@ import {
   getAdminOrdersHandler,
   getAdminOrderByIdHandler,
   updateOrderStatusHandler,
+  getOrderPaymentMethodHandler,
 } from "../controllers/orderController.js";
 import {
   getAdminCustomersHandler,
@@ -19,6 +20,8 @@ import {
 } from "../controllers/customerController.js";
 import { getDashboardOverviewHandler } from "../controllers/dashboardController.js";
 import { getAdminNotificationsHandler } from "../controllers/notificationController.js";
+import { generateDescriptionHandler } from "../controllers/productController.js";
+
 const router = express.Router();
 
 // Express fonksiyonları sırayla çalıştırır : İlk middleware
@@ -53,7 +56,7 @@ router.post(
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    const urls = files.map((file) => file.path);   
+    const urls = files.map((file) => file.path);
 
     res.status(200).json({ filenames: urls });
   },
@@ -68,7 +71,12 @@ router.patch(
   requireAdmin,
   updateOrderStatusHandler,
 );
-
+router.get(
+  "/orders/:id/payment-method",
+  validateJWT,
+  requireAdmin,
+  getOrderPaymentMethodHandler,
+);
 // customers
 router.get("/customers", validateJWT, requireAdmin, getAdminCustomersHandler);
 router.get(
@@ -76,5 +84,12 @@ router.get(
   validateJWT,
   requireAdmin,
   getAdminCustomerByIdHandler,
+);
+
+router.post(
+  "/products/generate-description",
+  validateJWT,
+  requireAdmin,
+  generateDescriptionHandler,
 );
 export default router;

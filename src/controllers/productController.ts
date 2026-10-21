@@ -23,6 +23,8 @@ import type {
   AdminProductSort,
 } from "../services/productService.js";
 
+import { generateProductDescription } from "../services/aiService.js";
+
 export const getProducts = async (req: Request, res: Response) => {
   try {
     const category =
@@ -160,12 +162,14 @@ export const getBrands = async (req: Request, res: Response) => {
 export const getAdminProductsHandler = async (req: Request, res: Response) => {
   try {
     const search =
-      typeof req.query.search === "string" ? req.query.search.trim() : undefined;
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : undefined;
 
     const category =
       typeof req.query.category === "string" ? req.query.category : undefined;
 
-      // TypeScript'e bu değerin StockStatus türünde olduğunu söylüyoruz
+    // TypeScript'e bu değerin StockStatus türünde olduğunu söylüyoruz
     const stockStatus =
       typeof req.query.stockStatus === "string"
         ? (req.query.stockStatus as StockStatus)
@@ -175,10 +179,12 @@ export const getAdminProductsHandler = async (req: Request, res: Response) => {
       typeof req.query.sort === "string"
         ? (req.query.sort as AdminProductSort)
         : undefined;
-// 2 ile "2" ayni degil buyuzden URL'den gelen page değeri  string ise onu sayıya çevir
-// page yoksa veya string değilse varsayılan olarak 1 kullan
-    const page = typeof req.query.page === "string" ? Number(req.query.page) : 1;
-    const limit = typeof req.query.limit === "string" ? Number(req.query.limit) : 10;
+    // 2 ile "2" ayni degil buyuzden URL'den gelen page değeri  string ise onu sayıya çevir
+    // page yoksa veya string değilse varsayılan olarak 1 kullan
+    const page =
+      typeof req.query.page === "string" ? Number(req.query.page) : 1;
+    const limit =
+      typeof req.query.limit === "string" ? Number(req.query.limit) : 10;
 
     // page ve limit her zaman varsayılan değere sahip olduğu için baştan ekleniyor. Diğer filtreler yalnızca kullanıcı tarafından gönderilmişse ekleniyor
     const filters: AdminProductFilters = { page, limit };
@@ -187,7 +193,7 @@ export const getAdminProductsHandler = async (req: Request, res: Response) => {
     if (stockStatus) filters.stockStatus = stockStatus;
     if (sort) filters.sort = sort;
 
-    // controller şöyle diyor: ben gerekli bilgileri topladım. 
+    // controller şöyle diyor: ben gerekli bilgileri topladım.
     // Şimdi asıl ürün bulma işini service yapsın
     // await önemli cunku getAdminProducts() mogodb ye gidiyor
     const result = await getAdminProducts(filters);
@@ -245,5 +251,35 @@ export const deleteProductHandler = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to delete product" });
+  }
+};
+
+// ---------------------------
+// HTTP request'i al ve service'i çağır
+export const generateDescriptionHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    // Frontend'den gelen body'yi al
+    const { title, brand, category, specs } = req.body;
+
+    // Title yoksa Gemini'ye gereksiz request gönderme
+    if (!title) {
+      return res.status(400).json({ message: "Product title is required" });
+    }
+
+    // daha önce yazdığın service fonksiyonunu çağır ve Gemini'ye gonder
+    const description = await generateProductDescription({
+      title,
+      brand,
+      category,
+      specs,
+    });
+    // sonucu frontend'e gönder
+    res.status(200).json({ description });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to generate description" });
   }
 };

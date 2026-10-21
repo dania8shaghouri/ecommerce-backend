@@ -9,6 +9,7 @@ import type {
   OrderStatus,
   OrderSort,
 } from "../services/orderService.js";
+import { getPaymentMethodDetails } from "../services/paymentService.js";
 
 type OrderParams = { id: string };
 
@@ -83,5 +84,26 @@ export const updateOrderStatusHandler = async (
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Failed to update order status" });
+  }
+};
+
+export const getOrderPaymentMethodHandler = async (
+  req: Request<OrderParams>,
+  res: Response,
+) => {
+  try {
+    const order = await getAdminOrderById(req.params.id);
+
+    if (!order || !order.stripeSessionId) {
+      return res.status(200).json(null);
+    }
+
+    // 200 + null ile bu bilgi yok sorun değil demiş oluyoruz
+    // yani kartin detaylari olmasa bile sayfanin geri kalani calismali
+    const paymentMethod = await getPaymentMethodDetails(order.stripeSessionId);
+    res.status(200).json(paymentMethod);
+  } catch (error) {
+    console.error(error);
+    res.status(200).json(null);
   }
 };

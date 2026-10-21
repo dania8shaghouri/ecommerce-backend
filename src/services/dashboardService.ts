@@ -20,88 +20,109 @@ const getMonthBoundaries = () => {
   return { now, startOfThisMonth, startOfLastMonth };
 };
 
+// 1 gün kaç milisaniye
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Mevcut değer + önceki değer + yüzde değişim
+const buildMetric = (current: number, previous: number) => ({
+  current,
+  previous,
+  changePct: calculateChangePct(current, previous),
+});
+
 // Dashboard'ın üst kısmındaki genel KPI/statistikleri hazırlamak
-export const getDashboardSummary = async () => {
-  const { now, startOfThisMonth, startOfLastMonth } = getMonthBoundaries();
+export const getDashboardSummary = async (days = 30) => {
+  const now = new Date();
+
+  // Mevcut dönem: Bugünden geriye doğru belirtilen gün sayısını hesapla
+  const currentStart = new Date(now.getTime() - days * MS_PER_DAY);
+
+  // Önceki dönem: Mevcut dönemden önceki aynı uzunluktaki zaman aralığını hesapla
+  const previousStart = new Date(now.getTime() - 2 * days * MS_PER_DAY);
+
+  // Mevcut dönemin başlangıç ve bitiş tarihini belirle
+  const currentRange = { $gte: currentStart, $lte: now };
+
+  // Önceki dönemin başlangıç ve bitiş tarihini belirle
+  const previousRange = { $gte: previousStart, $lt: currentStart };
+
+  // Belirtilen tarih aralığındaki ödemesi yapılmış siparişlerin toplam gelirini hesaplar
+  const sumPaidRevenue = async (range: Record<string, Date>) => {
+    const result = await orderModel.aggregate([
+      {
+        // Sadece ödemesi yapılmış ve belirtilen tarih aralığında oluşturulmuş siparişleri bul
+        $match: {
+          paymentStatus: "paid",
+          createdAt: range,
+        },
+      },
+
+      // Bulunan siparişlerin total değerlerini topla
+      {
+        $group: {
+          _id: null,
+          sum: { $sum: "$total" },
+        },
+      },
+    ]);
+
+    // Sonuç yoksa 0 döndür
+    return result[0]?.sum ?? 0;
+  };
 
   const [
-    revenueThisMonth,
-    revenueLastMonth,
-    ordersThisMonth,
-    ordersLastMonth,
-    customersThisMonth,
-    customersLastMonth,
-    productsThisMonth,
-    productsLastMonth,
-    totalRevenueAllTime,
-    totalOrdersAllTime,
-    totalCustomersAllTime,
-    totalProductsAllTime,
+    revenueCurrent,
+    revenuePrevious,
+    ordersCurrent,
+    ordersPrevious,
+    customersCurrent,
+    customersPrevious,
+    productsCurrent,
+    productsPrevious,
   ] = await Promise.all([
-    // Ödemesi yapılmış ve bu ay oluşturulmuş bütün siparişleri bul, sonra total değerlerini topla
-    orderModel.aggregate([
-      {
-        $match: {
-          paymentStatus: "paid",
-          createdAt: { $gte: startOfThisMonth },
-        },
-      },
-      { $group: { _id: null, sum: { $sum: "$total" } } },
-    ]),
-    // Geçen ay geliri
-    orderModel.aggregate([
-      {
-        $match: {
-          paymentStatus: "paid",
-          createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth },
-        },
-      },
-      { $group: { _id: null, sum: { $sum: "$total" } } },
-    ]),
-    // Bu ay oluşturulan kaç sipariş var
-    orderModel.countDocuments({ createdAt: { $gte: startOfThisMonth } }),
-    orderModel.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth },
-    }),
-    userModel.countDocuments({
-      role: "customer",
-      createdAt: { $gte: startOfThisMonth },
-    }),
-    userModel.countDocuments({
-      role: "customer",
-      createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth },
-    }),
-    productModel.countDocuments({ createdAt: { $gte: startOfThisMonth } }),
-    productModel.countDocuments({
-      createdAt: { $gte: startOfLastMonth, $lt: startOfThisMonth },
-    }),
-    // Sistemdeki tüm paid siparişlerin toplam gelirini hesapla
-    orderModel.aggregate([
-      { $match: { paymentStatus: "paid" } },
-      { $group: { _id: null, sum: { $sum: "$total" } } },
-    ]),
+    // Mevcut dönemdeki toplam ödemesi yapılmış geliri hesapla
+    sumPaidRevenue(currentRange),
 
-    orderModel.countDocuments({}), //Sistemdeki bütün siparişleri say
-    userModel.countDocuments({ role: "customer" }),
-    productModel.countDocuments({}),
+    // Önceki dönemdeki toplam ödemesi yapılmış geliri hesapla
+    sumPaidRevenue(previousRange),
+
+    // Mevcut dönemde oluşturulan siparişlerin sayısını hesapla
+    orderModel.countDocuments({ createdAt: currentRange }),
+
+    // Önceki dönemde oluşturulan siparişlerin sayısını hesapla
+    orderModel.countDocuments({ createdAt: previousRange }),
+
+    // Mevcut dönemde kayıt olan customer kullanıcıların sayısını hesapla
+    userModel.countDocuments({
+      role: "customer",
+      createdAt: currentRange,
+    }),
+
+    // Önceki dönemde kayıt olan customer kullanıcıların sayısını hesapla
+    userModel.countDocuments({
+      role: "customer",
+      createdAt: previousRange,
+    }),
+
+    // Mevcut dönemde oluşturulan ürünlerin sayısını hesapla
+    productModel.countDocuments({ createdAt: currentRange }),
+
+    // Önceki dönemde oluşturulan ürünlerin sayısını hesapla
+    productModel.countDocuments({ createdAt: previousRange }),
   ]);
 
   return {
-    // MongoDB'den gelen ham veriyi frontend'in kullanabileceği bir yapıya dönüştürüyo
-    totalRevenue: totalRevenueAllTime[0]?.sum ?? 0,
-    revenueChangePct: calculateChangePct(
-      revenueThisMonth[0]?.sum ?? 0,
-      revenueLastMonth[0]?.sum ?? 0,
-    ),
-    totalOrders: totalOrdersAllTime,
-    ordersChangePct: calculateChangePct(ordersThisMonth, ordersLastMonth),
-    totalCustomers: totalCustomersAllTime,
-    customersChangePct: calculateChangePct(
-      customersThisMonth,
-      customersLastMonth,
-    ),
-    totalProducts: totalProductsAllTime,
-    productsChangePct: calculateChangePct(productsThisMonth, productsLastMonth),
+    // Mevcut dönem ile önceki dönemi karşılaştırarak revenue metric'i oluştur
+    revenue: buildMetric(revenueCurrent, revenuePrevious),
+
+    // Mevcut dönem ile önceki dönemi karşılaştırarak orders metric'i oluştur
+    orders: buildMetric(ordersCurrent, ordersPrevious),
+
+    // Mevcut dönem ile önceki dönemi karşılaştırarak customers metric'i oluştur
+    customers: buildMetric(customersCurrent, customersPrevious),
+
+    // Mevcut dönem ile önceki dönemi karşılaştırarak products metric'i oluştur
+    products: buildMetric(productsCurrent, productsPrevious),
   };
 };
 
@@ -191,7 +212,7 @@ export const getTopProducts = async (limit = 5) => {
 };
 
 // HEPSİNİ BİRLEŞTİRİR
-export const getDashboardOverview = async () => {
+export const getDashboardOverview = async (days = 30) => {
   const [
     summary,
     monthlyRevenue,
@@ -199,7 +220,7 @@ export const getDashboardOverview = async () => {
     topProducts,
     recentOrdersResult,
   ] = await Promise.all([
-    getDashboardSummary(),
+    getDashboardSummary(days),
     getMonthlyRevenue(),
     getOrderStatusBreakdown(),
     getTopProducts(5),
